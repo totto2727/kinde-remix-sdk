@@ -4,37 +4,38 @@ import {
   validateClientSecret,
 } from "@kinde-oss/kinde-typescript-sdk";
 import { json, redirect } from "@remix-run/node";
-import { config } from "./config";
 import { createSessionManager } from "./session/session";
 import { generateCookieHeader } from "./utils/cookies";
 import { version } from "./utils/version";
-
-export const kindeClient = createKindeServerClient(
-  GrantType.AUTHORIZATION_CODE,
-  {
-    authDomain:
-      config.issuerUrl || "Set your issuer URL in your environment variables.",
-    clientId:
-      config.clientId || "Set your client ID in your environment variables.",
-    clientSecret: config.clientSecret,
-    redirectURL: config.siteUrl + "/kinde-auth/callback",
-    audience: config.audience,
-    logoutRedirectURL:
-      config.postLogoutRedirectUrl ||
-      "Set your logout redirect URL in your environment variables.",
-    frameworkVersion: version,
-    framework: "Remix",
-  },
-);
+import { getConfigFromEnv } from "./config";
 
 /**
  *
  * @param {Request} request
  * @param {string | undefined} route
- * @param {{onRedirectCallback?: (props: {user: import("./types").KindeUser}) => void}} [options]
+ * @param {import("./types").KindeHandleAuthOption} [options]
  * @returns
  */
 export const handleAuth = async (request, route, options) => {
+  const config = options?.config || getConfigFromEnv(process.env)
+  const kindeClient = createKindeServerClient(
+    GrantType.AUTHORIZATION_CODE,
+    {
+      authDomain:
+        config.issuerUrl || "Set your issuer URL in your environment variables.",
+      clientId:
+        config.clientId || "Set your client ID in your environment variables.",
+      clientSecret: config.clientSecret,
+      redirectURL: options?.callbackURL || config.siteUrl + "/kinde-auth/callback",
+      audience: config.audience,
+      logoutRedirectURL:
+        config.postLogoutRedirectUrl ||
+        "Set your logout redirect URL in your environment variables.",
+      frameworkVersion: version,
+      framework: "Remix",
+    },
+  );
+
   const { sessionManager, cookies } = await createSessionManager(request);
 
   const login = async () => {
@@ -101,7 +102,7 @@ export const handleAuth = async (request, route, options) => {
     const postLoginRedirectURL = postLoginRedirectURLFromMemory
       ? postLoginRedirectURLFromMemory
       : config.postLoginRedirectUrl ||
-        "Set your post login redirect URL in your environment variables.";
+      "Set your post login redirect URL in your environment variables.";
     const headers = generateCookieHeader(request, cookies);
 
     const user = await kindeClient.getUser(sessionManager);

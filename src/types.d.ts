@@ -62,3 +62,21 @@ export interface KindePermission {
   isGranted: boolean;
   orgCode: string | null;
 }
+
+export interface KindeHandleAuthOption {
+  onRedirectCallback?: (props: {user: KindeUser}) => void
+  config?: KindeConfig
+}
+
+export interface KindeConfig {
+    clientId: string,
+    clientSecret: string,
+    issuerUrl: string,
+    siteUrl: string,
+    postLogoutRedirectUrl: string,
+    postLoginRedirectUrl: string,
+    audience: string,
+    cookieMaxAge: string,
+    sessionSecret: string,
+    isDebugMode: boolean,  
+}
